@@ -2,11 +2,12 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '2.7.9'
     id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    id "org.owasp.dependencycheck" version "8.1.1"
 }
 
 group = 'com.dro.pfg'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '11'
+sourceCompatibility = '17'
 
 configurations {
     compileOnly {
@@ -16,14 +17,33 @@ configurations {
 
 repositories {
     mavenCentral()
+    maven {
+        url "https://plugins.gradle.org/m2/"
+    }
+}
+
+ext {
+    cloudConsulVersion = '3.1.2'
 }
 
 dependencies {
+    // Spring-boot starters
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // Spring-cloud starters
+    implementation "org.springframework.cloud:spring-cloud-starter-consul-all:$cloudConsulVersion"
+    implementation "org.springframework.cloud:spring-cloud-starter-consul-config:$cloudConsulVersion"
+
+    // Lombok
     compileOnly 'org.projectlombok:lombok'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor 'org.projectlombok:lombok'
+
+    // Misc
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 

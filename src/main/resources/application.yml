@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: product-cost
+  config:
+    import: "optional:consul:"
+  cloud:
+    consul:
+      config:
+        enabled: true
+      discovery:
+        prefer-ip-address: true
+        tags: version=1.0
+        healthCheckPath: /actuator/health
+        healthCheckInterval: 10s
+        healthCheckTimeout: 20s
+        healthCheckCriticalTimeout: 5m
+
+server:
+  port: 8080

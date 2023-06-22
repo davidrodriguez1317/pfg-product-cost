@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.dro.pfg'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.2-SNAPSHOT'
 sourceCompatibility = '17'
 
 configurations {
@@ -17,12 +17,10 @@ configurations {
 
 repositories {
     mavenCentral()
-    maven {
-        url "https://plugins.gradle.org/m2/"
-    }
 }
 
 ext {
+    dockerRegistry = '192.168.50.1:5001'
     cloudConsulVersion = '3.1.2'
 }
 
@@ -40,9 +38,6 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    // Misc
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
@@ -50,3 +45,41 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+
+task renameJarForDocker(type: Sync) {
+    from("$buildDir/libs/")
+    into("$buildDir/libs/")
+    include '*.jar'
+    rename { String filename ->
+        filename.replace("-${project.version}.jar", ".jar")
+    }
+}
+
+task copyJarToDockerDir(type: Copy) {
+    from "$buildDir/libs"
+    include "**/${project.name}.jar"
+    into "$buildDir/docker"
+}
+
+task prepareDockerDir(type: Copy) {
+    from "$projectDir/docker"
+    include "**/*"
+    filter { it.replaceAll('<%=name%>', project.name) } // makes Dockerfile more generic
+    into "$buildDir/docker"
+}
+
+task buildDockerImage(type:Exec) {
+    workingDir "$buildDir"
+    commandLine "docker", "build", "--tag", "${dockerRegistry}/${project.name}:latest", "--tag", "${dockerRegistry}/${project.name}:${project.version}", "docker"
+}
+
+task pushDockerImage(type: Exec) {
+    commandLine "docker", "push", "${dockerRegistry}/${project.name}:${project.version}"
+}
+
+copyJarToDockerDir.dependsOn build
+buildDockerImage.dependsOn prepareDockerDir
+copyJarToDockerDir.dependsOn renameJarForDocker
+buildDockerImage.dependsOn copyJarToDockerDir
+pushDockerImage.dependsOn buildDockerImage

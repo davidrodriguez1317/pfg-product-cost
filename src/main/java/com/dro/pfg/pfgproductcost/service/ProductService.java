@@ -14,15 +14,15 @@ public class ProductService {
 
     private final PriceService priceService;
 
-    public ProductDto getProductById(String id) {
+    public ProductDto getProductById(String currency, String id) {
 
-        PriceDto price = priceService.getPriceFromId(id);
-
+        PriceDto price = priceService.getPriceFromId(currency, id);
+        log.info("Price received for product with id {} and currency {}: {}", id, currency, price);
 
         return ProductDto.builder()
                 .deliveryCost(price.getDeliveryCost())
                 .id(id)
-                .currency(price.getCurrency())
+                .currency(currency)
                 .price(price.getPrice())
                 .build();
 

@@ -22,17 +22,16 @@ public class PriceService {
 
     private final DiscoveryClient discoveryClient;
 
-    public PriceDto getPriceFromId(String id) {
+    public PriceDto getPriceFromId(String currency, String id) {
 
         URI service = serviceUrl()
-                .map(s -> s.resolve(String.format("/price/%s", id)))
+                .map(s -> s.resolve(String.format("/price/%s/%s", currency, id)))
                 .orElseThrow(PriceServiceNotAvailableException::new);
 
-        log.info("Price service URI: " + service.toString());
+        log.info("Calling price-calculator. Price service URI: " + service.toString());
 
         Mono<PriceDto> response = this.webClient
                 .get()
-                //.uri(service.toString(), uri -> uri.queryParam("id", id).build())
                 .uri(service)
                 .retrieve()
                 .bodyToMono(PriceDto.class);

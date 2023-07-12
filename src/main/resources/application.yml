@@ -9,6 +9,19 @@ spring:
         healthCheckPath: /actuator/health
         healthCheckInterval: 20s
         healthCheckTimeout: 50s
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    connection-timeout: 5000
+    requested-heartbeat: 30
+    publisher-returns: true
+    listener:
+      simple:
+        retry:
+          enabled: false
+        missing-queues-fatal: false
 
 server:
-  port: 8090
+  port: 8080

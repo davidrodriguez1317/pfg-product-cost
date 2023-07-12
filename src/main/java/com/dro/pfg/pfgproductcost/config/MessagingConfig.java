@@ -1,65 +1,46 @@
 package com.dro.pfg.pfgproductcost.config;
 
-import io.netty.channel.ChannelOption;
-import io.netty.handler.timeout.ReadTimeoutHandler;
-import io.netty.handler.timeout.WriteTimeoutHandler;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.*;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
-import reactor.netty.http.client.HttpClient;
+import org.springframework.context.annotation.Lazy;
 
-import java.util.List;
+import static com.dro.pfg.pfgproductcost.config.Constants.*;
 
 @Configuration
 @Slf4j
-public class WebclientConfig {
+public class MessagingConfig {
 
     @Bean
-    public WebClient webClient(WebClient.Builder webClientBuilder) {
-
-        HttpClient httpClient = HttpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2_000) // millis
-                .doOnConnected(connection ->
-                        connection
-                                .addHandlerLast(new ReadTimeoutHandler(2)) // seconds
-                                .addHandlerLast(new WriteTimeoutHandler(2))); //seconds
-
-        return webClientBuilder
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-                .filter(logRequest())
-                .filter(logResponse())
-                .build();
+    public MessageConverter messageConverter() {
+        return new Jackson2JsonMessageConverter();
     }
 
-    private ExchangeFilterFunction logRequest() {
-        return (clientRequest, next) -> {
-            log.info("Request: {} {}", clientRequest.method(), clientRequest.url());
-            log.info("--- Http Headers: ---");
-            clientRequest.headers().forEach(this::logHeader);
-            log.info("--- Http Cookies: ---");
-            clientRequest.cookies().forEach(this::logHeader);
-            return next.exchange(clientRequest);
-        };
+    @Bean
+    //@Lazy
+    public TopicExchange productExchange() {
+        return new TopicExchange (PRODUCT_EXCHANGE);
     }
 
-    private ExchangeFilterFunction logResponse() {
-        return ExchangeFilterFunction.ofResponseProcessor(clientResponse -> {
-            log.info("Response: {}", clientResponse.statusCode());
-            clientResponse.headers().asHttpHeaders()
-                    .forEach((name, values) -> values.forEach(value -> log.info("{}={}", name, value)));
-            return Mono.just(clientResponse);
-        });
+    @Bean
+    //@Lazy
+    public Queue publishQueue() {
+        return new Queue(PRODUCT_PUBLISH_QUEUE);
     }
 
-    private void logHeader(String name, List<String> values) {
-        values.forEach(value -> log.info("{}={}", name, value));
+    @Bean
+    //@Lazy
+    public Queue consumeQueue() {
+        return new Queue(PRODUCT_CONSUME_QUEUE);
     }
+
+    @Bean
+    public Binding binding(Queue publishQueue, TopicExchange myExchange) {
+        return BindingBuilder.bind(publishQueue)
+                .to(myExchange).with(PRODUCT_PUBLISH_ROUTING_KEY);
+    }
+
 }

@@ -14,6 +14,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
+import java.time.Duration;
 import java.util.List;
 
 @Configuration
@@ -24,11 +25,12 @@ public class WebclientConfig {
     public WebClient webClient(WebClient.Builder webClientBuilder) {
 
         HttpClient httpClient = HttpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2_000) // millis
+                .responseTimeout(Duration.ofMillis(5_000L))
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5_000) // millis
                 .doOnConnected(connection ->
                         connection
-                                .addHandlerLast(new ReadTimeoutHandler(2)) // seconds
-                                .addHandlerLast(new WriteTimeoutHandler(2))); //seconds
+                                .addHandlerLast(new ReadTimeoutHandler(5)) // seconds
+                                .addHandlerLast(new WriteTimeoutHandler(5))); //seconds
 
         return webClientBuilder
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
